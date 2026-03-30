@@ -1,0 +1,58 @@
+paths:
+  raw_data: data/raw              
+  processed: data/processed       
+  embeddings: data/embeddings     
+  graph: data/graph               
+corpus:
+  min_chunk_length: 20           
+
+embeddings:
+  model_name: all-MiniLM-L6-v2
+  embedding_dim: 384
+  batch_size: 512                 
+  normalize: true                 
+
+faiss:
+  index_type: flat                
+  nprobe: 16                      
+
+graph:
+  edge_types:
+    same_context: true            
+    title_mention: true           
+    entity_overlap: true          
+  entity_overlap:
+    spacy_model: en_core_web_sm
+    entity_types:                 
+      - PERSON
+      - ORG
+      - GPE
+      - LOC
+      - WORK_OF_ART
+    min_shared_entities: 1        
+  title_mention:
+    case_sensitive: false
+    min_title_length: 3           
+
+retrieval:
+  seed_k: 20                     
+  expansion_hops: 2              
+  final_k: 10                    
+
+gnn:
+  model: graphsage               
+  hidden_dim: 128
+  num_layers: 2
+  dropout: 0.2
+  heads: 4                       
+
+training:
+  lr: 0.001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 5                    
+  batch_size: 64
+  pos_weight: 5.0             
+
+evaluation:
+  recall_k: [5, 10, 20]

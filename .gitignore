@@ -1,0 +1,10 @@
+.env
+/data/processed
+/data/embeddings
+/data/graph
+/data/raw
+__pycache__
+venv
+graph_augmented_retrieval_system.egg-info
+notebooks
+src/data/graph.py
