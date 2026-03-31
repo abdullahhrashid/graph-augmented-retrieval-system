@@ -7,12 +7,13 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def make_chunk_id(title):
+def make_doc_id(title):
+    """Deterministic document ID from its Wikipedia title."""
     return hashlib.sha256(title.encode('utf-8')).hexdigest()[:16]
 
 def extract_corpus_and_samples(config):
     raw_path = config['paths']['raw_data']
-    min_len = config['corpus']['min_chunk_length']
+    min_len = config['corpus']['min_doc_length']  
     corpus = {}          
     split_dfs = {}
 
@@ -34,34 +35,34 @@ def extract_corpus_and_samples(config):
             for t, s in zip(sf_titles, sf_sent_ids):
                 sf_map.setdefault(t, set()).add(s)
 
-            context_chunk_ids = []
-            supporting_chunk_ids = []
-            supporting_sent_ids_per_chunk = {}
+            context_doc_ids = []
+            supporting_doc_ids = []
+            supporting_sent_ids_per_doc = {}
 
             for title, sents in zip(titles, sentences_list):
                 text = ' '.join(sents).strip()
                 if len(text) < min_len:
                     continue
 
-                chunk_id = make_chunk_id(title)
+                doc_id = make_doc_id(title)
 
-                #add to corpus (dedup by title)
+                #add to corpus (dedup by title — same article always has same text)
                 if title not in corpus:
-                    corpus[title] = {'chunk_id': chunk_id, 'text': text}
+                    corpus[title] = {'chunk_id': doc_id, 'text': text}
 
-                context_chunk_ids.append(chunk_id)
+                context_doc_ids.append(doc_id)
 
-                #check if this chunk is a supporting fact for this sample
+                #check if this document is a supporting fact for this sample
                 if title in sf_map:
-                    supporting_chunk_ids.append(chunk_id)
-                    supporting_sent_ids_per_chunk[chunk_id] = sorted(sf_map[title])
+                    supporting_doc_ids.append(doc_id)
+                    supporting_sent_ids_per_doc[doc_id] = sorted(sf_map[title])
 
             rows.append({
                 'sample_id': sample['id'],
                 'question': sample['question'],
                 'answer': sample['answer'],
-                'context_chunk_ids': context_chunk_ids,
-                'supporting_chunk_ids': supporting_chunk_ids,
+                'context_chunk_ids': context_doc_ids,
+                'supporting_chunk_ids': supporting_doc_ids,
             })
 
         split_dfs[split] = pd.DataFrame(rows)
@@ -73,7 +74,7 @@ def extract_corpus_and_samples(config):
         for title, v in corpus.items()
     ]
     corpus_df = pd.DataFrame(corpus_rows)
-    logger.info(f'Unified corpus: {len(corpus_df)} unique chunks')
+    logger.info(f'Unified corpus: {len(corpus_df)} unique documents')
 
     return corpus_df, split_dfs
 
@@ -83,7 +84,7 @@ def save_corpus_and_samples(corpus_df, split_dfs, config):
 
     corpus_path = os.path.join(out_dir, 'corpus.parquet')
     corpus_df.to_parquet(corpus_path, index=False)
-    logger.info(f'Saved corpus -> {corpus_path}  ({len(corpus_df)} chunks)')
+    logger.info(f'Saved corpus -> {corpus_path}  ({len(corpus_df)} documents)')
 
     for split, df in split_dfs.items():
         path = os.path.join(out_dir, f'{split}_samples.parquet')

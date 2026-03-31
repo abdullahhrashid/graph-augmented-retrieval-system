@@ -30,17 +30,17 @@ def build_vectorstore(config):
     logger.info(f'Loading embedding model: {model_name}')
     model = SentenceTransformer(model_name)
 
-    #encode chunks
+    #encode documents
     corpus_df = pd.read_parquet(os.path.join(proc_dir, 'corpus.parquet'))
     chunk_ids = corpus_df['chunk_id'].tolist()
     chunk_texts = corpus_df['text'].tolist()
 
-    logger.info(f'Encoding {len(chunk_texts)} chunks')
+    logger.info(f'Encoding {len(chunk_texts)} documents')
     chunk_embs = encode_texts(model, chunk_texts, batch_size, normalize)
 
     np.save(os.path.join(emb_dir, 'chunk_embeddings.npy'), chunk_embs)
     np.save(os.path.join(emb_dir, 'chunk_ids.npy'), np.array(chunk_ids))
-    logger.info(f'Saved chunk embeddings: {chunk_embs.shape}')
+    logger.info(f'Saved document embeddings: {chunk_embs.shape}')
 
     #build faiss index
     dim = chunk_embs.shape[1]

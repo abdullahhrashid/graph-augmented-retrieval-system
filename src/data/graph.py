@@ -12,20 +12,8 @@ logger = get_logger(__name__)
 def build_node_mapping(corpus_df):
     return {cid: idx for idx, cid in enumerate(corpus_df['chunk_id'])}
 
-def build_same_context_edges(split_dfs):
-    #connect all chunk pairs that co occur in any sample's context (undirected)
-    edges = set()
-    for split, df in split_dfs.items():
-        logger.info(f'Building same context edges from {split} ({len(df)} samples)')
-        for chunk_ids in tqdm(df['context_chunk_ids'], desc=f'same ctx ({split})'):
-            for a, b in combinations(chunk_ids, 2):
-                edges.add((a, b))
-                edges.add((b, a))
-    logger.info(f'Same context edges: {len(edges)}')
-    return edges
-
 def build_title_mention_edges(corpus_df, config):
-    #title of chunk A appears in text of chunk B -> directed edge B -> A
+    #hyperlink proxy: title of doc A appears in text of doc B -> directed edge B->A
     #uses aho corasick multi pattern matching for efficiency
     tc = config['graph']['title_mention']
     case_sensitive = tc['case_sensitive']
@@ -33,7 +21,7 @@ def build_title_mention_edges(corpus_df, config):
 
     titles = corpus_df['title'].tolist()
     texts = corpus_df['text'].tolist()
-    chunk_ids = corpus_df['chunk_id'].tolist()
+    doc_ids = corpus_df['chunk_id'].tolist()
 
     if not case_sensitive:
         search_titles = [t.lower() for t in titles]
@@ -42,17 +30,16 @@ def build_title_mention_edges(corpus_df, config):
         search_titles = titles
         search_texts = texts
 
-    #only include titles that are long enough to avoid false matches
+    #build automaton from all titles long enough to be meaningful
     automaton = ahocorasick.Automaton()
-    for title, cid in zip(search_titles, chunk_ids):
+    for title, did in zip(search_titles, doc_ids):
         if len(title) >= min_title_len:
-            #if multiple chunks share the same title string, last one wins (deduped corpus so this won't happen)
-            automaton.add_word(title, (title, cid))
+            automaton.add_word(title, (title, did))
     automaton.make_automaton()
 
     edges = set()
     for source_text, source_id in tqdm(
-        zip(search_texts, chunk_ids), total=len(chunk_ids), desc='title-mention'
+        zip(search_texts, doc_ids), total=len(doc_ids), desc='title-mention'
     ):
         for _, (matched_title, target_id) in automaton.iter(source_text):
             if source_id != target_id:
@@ -63,7 +50,7 @@ def build_title_mention_edges(corpus_df, config):
 
 
 def build_entity_overlap_edges(corpus_df, config):
-    #extract named entities with spacy, connect chunks sharing >=1 entity
+    #extract NEs with spaCy, connect documents sharing >=1 entity
     ec = config['graph']['entity_overlap']
     spacy_model = ec['spacy_model']
     entity_types = set(ec['entity_types'])
@@ -73,41 +60,41 @@ def build_entity_overlap_edges(corpus_df, config):
     nlp = spacy.load(spacy_model, disable=['parser', 'lemmatizer', 'textcat'])
 
     texts = corpus_df['text'].tolist()
-    chunk_ids = corpus_df['chunk_id'].tolist()
+    doc_ids = corpus_df['chunk_id'].tolist()
 
-    logger.info(f'Extracting entities from {len(texts)} chunks')
-    chunk_entities = {}
-    for doc, cid in tqdm(
-        zip(nlp.pipe(texts, batch_size=256, n_process=1), chunk_ids),
+    logger.info(f'Extracting entities from {len(texts)} documents')
+    doc_entities = {}
+    for doc, did in tqdm(
+        zip(nlp.pipe(texts, batch_size=256, n_process=1), doc_ids),
         total=len(texts), desc='NER'
     ):
         ents = {ent.text.lower().strip() for ent in doc.ents if ent.label_ in entity_types}
-        chunk_entities[cid] = ents
+        doc_entities[did] = ents
 
-    #inverted index: entity -> set of chunk_ids that contain it
-    entity_to_chunks = defaultdict(set)
-    for cid, ents in chunk_entities.items():
+    #inverted index: entity -> set of doc IDs that contain it
+    entity_to_docs = defaultdict(set)
+    for did, ents in doc_entities.items():
         for ent in ents:
-            entity_to_chunks[ent].add(cid)
+            entity_to_docs[ent].add(did)
 
     if min_shared == 1:
         #fast path: any shared entity = edge
         edges = set()
-        for cids in tqdm(entity_to_chunks.values(), desc='entity-overlap edges'):
-            cid_list = list(cids)
-            if len(cid_list) < 2:
+        for dids in tqdm(entity_to_docs.values(), desc='entity-overlap edges'):
+            did_list = list(dids)
+            if len(did_list) < 2:
                 continue
-            for a, b in combinations(cid_list, 2):
+            for a, b in combinations(did_list, 2):
                 edges.add((a, b))
                 edges.add((b, a))
     else:
         #count shared entities per pair, then threshold
         pair_counts = defaultdict(int)
-        for cids in entity_to_chunks.values():
-            cid_list = list(cids)
-            if len(cid_list) < 2:
+        for dids in entity_to_docs.values():
+            did_list = list(dids)
+            if len(did_list) < 2:
                 continue
-            for a, b in combinations(cid_list, 2):
+            for a, b in combinations(did_list, 2):
                 pair_counts[(a, b)] += 1
                 pair_counts[(b, a)] += 1
         edges = {pair for pair, count in pair_counts.items() if count >= min_shared}
@@ -122,13 +109,7 @@ def build_graph(config):
 
     corpus_df = pd.read_parquet(os.path.join(proc_dir, 'corpus.parquet'))
 
-    split_dfs = {}
-    for split in ('train', 'val', 'test'):
-        path = os.path.join(proc_dir, f'{split}_samples.parquet')
-        if os.path.exists(path):
-            split_dfs[split] = pd.read_parquet(path)
-
-    #node mapping: chunk_id -> integer index
+    #node mapping: doc_id (chunk_id column) -> integer index
     node_map = build_node_mapping(corpus_df)
     node_df = corpus_df[['chunk_id', 'title']].copy()
     node_df.insert(0, 'node_idx', range(len(node_df)))
@@ -137,15 +118,6 @@ def build_graph(config):
 
     all_edge_rows = []
     edge_cfg = config['graph']['edge_types']
-
-    if edge_cfg['same_context']:
-        sc_edges = build_same_context_edges(split_dfs)
-        for src, dst in sc_edges:
-            all_edge_rows.append({
-                'src_id': src, 'dst_id': dst,
-                'src_idx': node_map[src], 'dst_idx': node_map[dst],
-                'edge_type': 'same_context',
-            })
 
     if edge_cfg['title_mention']:
         tm_edges = build_title_mention_edges(corpus_df, config)
