@@ -29,6 +29,10 @@ graph:
       - GPE
       - LOC
       - WORK_OF_ART
+      - FAC
+      - EVENT
+      - PRODUCT
+      - LAW
     min_shared_entities: 1        
   title_mention:
     case_sensitive: false

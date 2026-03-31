@@ -17,7 +17,7 @@ def encode_texts(model, texts, batch_size, normalize):
     )
     return embeddings.astype(np.float32)
 
-def build_vectorstore(config: dict):
+def build_vectorstore(config):
     proc_dir = config['paths']['processed']
     emb_dir = config['paths']['embeddings']
     os.makedirs(emb_dir, exist_ok=True)
@@ -36,8 +36,7 @@ def build_vectorstore(config: dict):
     chunk_texts = corpus_df['text'].tolist()
 
     logger.info(f'Encoding {len(chunk_texts)} chunks')
-    chunk_embs = encode_texts(model, chunk_texts, batch_size, normalize,
-                              desc='Chunks')
+    chunk_embs = encode_texts(model, chunk_texts, batch_size, normalize)
 
     np.save(os.path.join(emb_dir, 'chunk_embeddings.npy'), chunk_embs)
     np.save(os.path.join(emb_dir, 'chunk_ids.npy'), np.array(chunk_ids))
@@ -61,7 +60,7 @@ def build_vectorstore(config: dict):
     index.add(chunk_embs)
     index_path = os.path.join(emb_dir, 'faiss.index')
     faiss.write_index(index, index_path)
-    logger.info(f'FAISS index ({index_type}): {index.ntotal} vectors → {index_path}')
+    logger.info(f'FAISS index ({index_type}): {index.ntotal} vectors -> {index_path}')
 
     #encode queries per split
     for split in ('train', 'val', 'test'):
@@ -74,8 +73,7 @@ def build_vectorstore(config: dict):
         questions = df['question'].tolist()
 
         logger.info(f'Encoding {len(questions)} {split} queries')
-        query_embs = encode_texts(model, questions, batch_size, normalize,
-                                  desc=f'{split} queries')
+        query_embs = encode_texts(model, questions, batch_size, normalize)
 
         np.save(os.path.join(emb_dir, f'{split}_query_embeddings.npy'), query_embs)
         logger.info(f'Saved {split} query embeddings: {query_embs.shape}')
