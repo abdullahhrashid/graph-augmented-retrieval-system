@@ -8,7 +8,6 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 def make_doc_id(title):
-    """Deterministic document ID from its Wikipedia title."""
     return hashlib.sha256(title.encode('utf-8')).hexdigest()[:16]
 
 def extract_corpus_and_samples(config):

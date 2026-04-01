@@ -13,7 +13,7 @@ def build_node_mapping(corpus_df):
     return {cid: idx for idx, cid in enumerate(corpus_df['chunk_id'])}
 
 def build_title_mention_edges(corpus_df, config):
-    #hyperlink proxy: title of doc A appears in text of doc B -> directed edge B->A
+    #hyperlink proxy: title of doc A appears in text of doc B -> directed edge B -> A
     #uses aho corasick multi pattern matching for efficiency
     tc = config['graph']['title_mention']
     case_sensitive = tc['case_sensitive']
@@ -48,13 +48,13 @@ def build_title_mention_edges(corpus_df, config):
     logger.info(f'Title-mention edges: {len(edges)}')
     return edges
 
-
 def build_entity_overlap_edges(corpus_df, config):
-    #extract NEs with spaCy, connect documents sharing >=1 entity
+    #extract named entities with spacy, connect documents sharing >=1 entity
     ec = config['graph']['entity_overlap']
     spacy_model = ec['spacy_model']
     entity_types = set(ec['entity_types'])
     min_shared = ec['min_shared_entities']
+    max_docs = ec.get('max_docs_per_entity', 50)
 
     logger.info(f'Loading spaCy model: {spacy_model}')
     nlp = spacy.load(spacy_model, disable=['parser', 'lemmatizer', 'textcat'])
@@ -82,7 +82,7 @@ def build_entity_overlap_edges(corpus_df, config):
         edges = set()
         for dids in tqdm(entity_to_docs.values(), desc='entity-overlap edges'):
             did_list = list(dids)
-            if len(did_list) < 2:
+            if len(did_list) < 2 or len(did_list) > max_docs:
                 continue
             for a, b in combinations(did_list, 2):
                 edges.add((a, b))
@@ -92,7 +92,7 @@ def build_entity_overlap_edges(corpus_df, config):
         pair_counts = defaultdict(int)
         for dids in entity_to_docs.values():
             did_list = list(dids)
-            if len(did_list) < 2:
+            if len(did_list) < 2 or len(did_list) > max_docs:
                 continue
             for a, b in combinations(did_list, 2):
                 pair_counts[(a, b)] += 1

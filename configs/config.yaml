@@ -33,6 +33,7 @@ graph:
       - PRODUCT
       - LAW
     min_shared_entities: 1        
+    max_docs_per_entity: 50
   title_mention:
     case_sensitive: false
     min_title_length: 3           
@@ -43,9 +44,7 @@ retrieval:
   final_k: 10                    
 
 gnn:
-  model: graphsage               
-  hidden_dim: 128
-  num_layers: 2
+  hidden_dim: 768
   dropout: 0.2
   heads: 4                       
 
