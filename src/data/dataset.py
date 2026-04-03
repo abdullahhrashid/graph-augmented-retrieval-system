@@ -1,4 +1,5 @@
 import os
+import random
 import numpy as np
 import pandas as pd
 import torch
@@ -17,6 +18,7 @@ class SubgraphDataset(Dataset):
         graph_dir = config['paths']['graph']
         proc_dir = config['paths']['processed']
         self.expansion_hops = config['retrieval']['expansion_hops']
+        self.max_neighbors = config['retrieval'].get('max_neighbors_per_hop', 40)
 
         #load samples
         samples_df = pd.read_parquet(os.path.join(proc_dir, f'{split}_samples.parquet'))
@@ -64,13 +66,16 @@ class SubgraphDataset(Dataset):
         #seed nodes for this query 
         seeds = set(self.seed_indices[idx].tolist())
 
-        #expand to k hop neighbors
+        #expand to k hop neighbors with neighbor cap
         subgraph_nodes = set(seeds)
         frontier = set(seeds)
         for _ in range(self.expansion_hops):
             next_frontier = set()
             for node in frontier:
-                for neighbor, _ in self.adj[node]:
+                neighbors = self.adj[node]
+                if len(neighbors) > self.max_neighbors:
+                    neighbors = random.sample(neighbors, self.max_neighbors)
+                for neighbor, _ in neighbors:
                     if neighbor not in subgraph_nodes:
                         next_frontier.add(neighbor)
             subgraph_nodes.update(next_frontier)
@@ -105,7 +110,7 @@ class SubgraphDataset(Dataset):
             edge_type = torch.zeros(0, dtype=torch.long)
 
         #query embedding
-        query = torch.tensor(self.query_embs[idx], dtype=torch.float32)
+        query = torch.tensor(self.query_embs[idx], dtype=torch.float32).unsqueeze(0)
 
         #labels: 1 if the node is a supporting document for this query, 0 otherwise
         supporting_set = set()

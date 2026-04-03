@@ -1,28 +1,21 @@
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-#really cool contrastive loss function, works on the basis of independent binary decisions per pair
-class MultiNegativeSigmoidLoss(nn.Module):
-    def __init__(self, temperature=0.07, neg_weight=1.0):
+#siglip loss
+class MultiPositiveSigmoidLoss(nn.Module):
+    def __init__(self, init_t=math.log(10.0), init_b=-10.0):
         super().__init__()
-        self.temperature = temperature
-        self.neg_weight = neg_weight
+        #learnable temperature and bias
+        self.t = nn.Parameter(torch.tensor(init_t))
+        self.b = nn.Parameter(torch.tensor(init_b))
 
-    def forward(self, query_embs, doc_embs):
-        scores = torch.matmul(query_embs, doc_embs.T) / self.temperature
+    def forward(self, query_embs, doc_embs, labels):
+        #torch.exp(self.t) to ensure the temperature scaling remains positive
+        scores = (torch.matmul(query_embs, doc_embs.T) * torch.exp(self.t)) + self.b
 
-        B = scores.shape[0]
-        device = scores.device
+        #calculate independent sigmoid losses
+        loss = F.binary_cross_entropy_with_logits(scores, labels.float())
 
-        pos_scores = scores[torch.arange(B), torch.arange(B)]
-
-        mask = ~torch.eye(B, dtype=torch.bool, device=device)
-        neg_scores = scores[mask].view(B, B - 1)
-
-        pos_loss = -F.logsigmoid(pos_scores)
-        neg_loss = -F.logsigmoid(-neg_scores).mean(dim=1)
-
-        loss = pos_loss + self.neg_weight * neg_loss
-
-        return loss.mean()
+        return loss

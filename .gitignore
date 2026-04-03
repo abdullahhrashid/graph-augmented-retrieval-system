@@ -8,3 +8,4 @@ venv
 graph_augmented_retrieval_system.egg-info
 notebooks
 todo.txt
+wandb

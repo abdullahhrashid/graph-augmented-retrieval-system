@@ -41,20 +41,29 @@ graph:
 retrieval:
   seed_k: 20                     
   expansion_hops: 2              
+  max_neighbors_per_hop: 40
   final_k: 10                    
 
 gnn:
-  hidden_dim: 768
+  hidden_dim: 256
   dropout: 0.2
-  heads: 4                       
+  heads: 2                       
 
 training:
   lr: 0.001
   weight_decay: 0.0001
   epochs: 30
+  warmup_epochs: 2
+  min_lr: 1e-6
   patience: 5                    
   batch_size: 64
-  pos_weight: 5.0             
+  pos_weight: 5.0
+  temperature: 0.07
+  neg_weight: 1.0
+  wandb_project: graph-ranker
+  save_dir: checkpoints
+  num_workers: 0
+  device: cpu
 
 evaluation:
   recall_k: [5, 10, 20]
