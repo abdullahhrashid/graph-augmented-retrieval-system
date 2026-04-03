@@ -1,0 +1,15 @@
+2026-04-03 16:25:37,614 - __main__ - INFO - Evaluating on test set with K=[5, 10, 20]
+2026-04-03 16:25:59,720 - __main__ - INFO - 5000 queries loaded
+2026-04-03 16:25:59,720 - __main__ - INFO - Running Vector RAG
+2026-04-03 16:25:59,985 - __main__ - INFO - Running Graph RAG
+Graph RAG:   0%|          | 0/5000 [00:00<?, ?it/s]Graph RAG:   0%|          | 2/5000 [00:00<05:53, 14.15it/s]Graph RAG:   0%|          | 4/5000 [00:00<07:24, 11.23it/s]Graph RAG:   0%|          | 7/5000 [00:00<05:14, 15.86it/s]Graph RAG:   0%|          | 11/5000 [00:00<03:45, 22.11it/s]Graph RAG:   0%|          | 14/5000 [00:00<03:55, 21.18it/s]Graph RAG:   0%|          | 17/5000 [00:00<03:43, 22.25it/s]Graph RAG:   0%|          | 20/5000 [00:00<03:37, 22.86it/s]Graph RAG:   0%|          | 24/5000 [00:01<03:08, 26.41it/s]Graph RAG:   1%|          | 27/5000 [00:01<03:14, 25.55it/s]Graph RAG:   1%|          | 31/5000 [00:01<03:06, 26.63it/s]Graph RAG:   1%|          | 35/5000 [00:01<02:47, 29.67it/s]Graph RAG:   1%|          | 39/5000 [00:01<02:46, 29.72it/s]Graph RAG:   1%|          | 43/5000 [00:01<02:53, 28.54it/s]Graph RAG:   1%|          | 47/5000 [00:01<02:57, 27.93it/s]Graph RAG:   1%|          | 50/5000 [00:02<03:05, 26.68it/s]Graph RAG:   1%|          | 53/5000 [00:02<03:11, 25.78it/s]Graph RAG:   1%|          | 55/5000 [00:02<03:31, 23.43it/s]
+Traceback (most recent call last):
+  File "/home/user/Desktop/gnn/scripts/evaluate.py", line 266, in <module>
+    main()
+  File "/home/user/Desktop/gnn/scripts/evaluate.py", line 241, in main
+    graph_ranked = run_graph_rag(data, config, k_values)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Desktop/gnn/scripts/evaluate.py", line 110, in run_graph_rag
+    node_list = sorted(subgraph_nodes)
+                ^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

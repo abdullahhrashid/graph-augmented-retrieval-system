@@ -31,44 +31,18 @@ def get_device(config):
     return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def build_loss_inputs(data, refined_embs):
-    batch_vec = data.batch
-    num_graphs = batch_vec.max().item() + 1
-
-    query_list = []
-    doc_list = []
-    #track which query index each doc belongs to
-    query_idx_per_doc = []
-    query_counter = 0
-
-    for g in range(num_graphs):
-        node_mask = (batch_vec == g)
-        pos_mask = node_mask & (data.y == 1.0)
-
-        if pos_mask.sum() == 0:
-            continue
-
-        q = data.query[g]
-        pos_embs = refined_embs[pos_mask]  # [num_pos, D] (usually 2)
-
-        query_list.append(q)
-        for i in range(pos_embs.size(0)):
-            doc_list.append(pos_embs[i])
-            query_idx_per_doc.append(query_counter)
-        query_counter += 1
-
-    if not query_list:
-        return None, None, None
-
-    query_embs = torch.stack(query_list, dim=0)  # [Q, D]
-    doc_embs = torch.stack(doc_list, dim=0)      # [P, D] where P = 2*Q typically
-
-    #labels: [Q, P] — labels[i, j] = 1 if doc j belongs to query i
-    Q = len(query_list)
-    P = len(doc_list)
-    labels = torch.zeros(Q, P, device=refined_embs.device)
-    for j, qi in enumerate(query_idx_per_doc):
-        labels[qi, j] = 1.0
-
+    query_embs = data.query            # [Q, D]
+    doc_embs = refined_embs            # [N, D]
+    
+    Q = query_embs.size(0)
+    N = doc_embs.size(0)
+    labels = torch.zeros(Q, N, device=refined_embs.device)
+    
+    for g in range(Q):
+        #mark positive docs for graph g
+        pos_mask = (data.batch == g) & (data.y == 1.0)
+        labels[g, pos_mask] = 1.0
+        
     return query_embs, doc_embs, labels
 
 @torch.no_grad()
