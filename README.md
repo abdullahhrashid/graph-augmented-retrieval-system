@@ -299,7 +299,7 @@ The knowledge graph connects 246K documents through two edge types:
 
 - **Neighbor Capping:** BFS expansion limited to 40 neighbors/hop (14 during training) to prevent OOM from hub node explosion
 - **GATv2Conv:** Replaced RGATConv (which creates per-relation weight matrices) with GATv2Conv + learned edge embeddings for 10× memory reduction
-- **Memory-Mapped Embeddings:** Document embedding matrix loaded with `mmap_mode='r'` to avoid loading 360MB into RAM during dataset construction
+- **Memory-Mapped Embeddings:** Document embedding matrix loaded with `mmap_mode='r'` to avoid loading large data into RAM during dataset construction
 
 ---
 
