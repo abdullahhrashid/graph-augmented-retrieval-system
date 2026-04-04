@@ -80,7 +80,7 @@ flowchart LR
 
 ## Model: Query-Conditioned GATv2 GraphRanker
 
-The core innovation is a **query-conditioned Graph Attention Network** that learns to propagate relevance signals through the document graph.
+The core innovation is a **Query-Conditioned Graph Attention Network** that learns to propagate relevance signals through the document graph.
 
 ### Architecture
 
@@ -110,10 +110,9 @@ Score: score(doc_i) = out_i · q           # cosine similarity
 
 ### Key Design Decisions
 
-- **GATv2Conv over RGATConv:** RGATConv creates per-relation weight matrices that caused OOM on T4 GPUs. GATv2Conv with learned edge embeddings (`nn.Embedding(2, 64)`) achieves the same expressivity with 10× less memory.
 - **Query-Conditioned Gating:** A sigmoid gate `σ(MLP([x, q]))` selectively suppresses irrelevant node features *before* message passing, preventing noise propagation.
 - **Residual Connection:** `out = projection(h) + x₀` preserves the base semantic similarity from the pre-trained embeddings, so the GNN only needs to learn the *delta* from graph structure.
-- **Neighbor Capping:** BFS expansion is capped at 40 neighbors per hop. Without this, hub nodes (e.g., "United States") explode to 50K+ edges and crash training.
+- **Neighbor Capping:** BFS expansion is capped at 14 (40 during inference) neighbors per hop. Without this, hub nodes (e.g., "United States") explode to 50K+ edges and crash training.
 
 ---
 
@@ -123,7 +122,7 @@ Score: score(doc_i) = out_i · q           # cosine similarity
 
 Each training subgraph contains ~200-500 nodes but only **2 gold documents** per query — a 250:1 negative-to-positive ratio. Standard BCE loss collapses to near-zero by predicting everything as negative.
 
-### Our Solution: Multi-Positive Sigmoid Loss
+### Solution: Multi-Positive Sigmoid Loss
 
 We adapt the [SigLIP](https://arxiv.org/abs/2303.15343) pairwise sigmoid loss with **dynamic positive weighting**:
 
@@ -144,18 +143,18 @@ Evaluated on the **HotpotQA test set** (5,000 multi-hop queries, 246K document c
 
 | Metric | Vector RAG | Graph-Augmented RAG | **Δ Improvement** |
 |--------|:----------:|:-------------------:|:------------------:|
-| **Recall@5** | 0.5508 | **0.6421** | +16.6% |
-| **Recall@10** | 0.6124 | **0.7272** | +18.8% |
-| **Recall@20** | 0.6599 | **0.7901** | +19.7% |
-| **EM@5** | 0.2500 | **0.4402** | +76.1% |
-| **EM@10** | 0.3322 | **0.5706** | +71.8% |
-| **EM@20** | 0.3990 | **0.6688** | +67.6% |
-| **nDCG@5** | 0.5579 | **0.6091** | +9.2% |
-| **nDCG@10** | 0.5822 | **0.6432** | +10.5% |
-| **nDCG@20** | 0.5970 | **0.6628** | +11.0% |
-| **MAP** | 0.4904 | **0.5613** | +14.5% |
+| **Recall@5** | 0.5508 | **0.6421** | +9.13% |
+| **Recall@10** | 0.6124 | **0.7272** | +11.48% |
+| **Recall@20** | 0.6599 | **0.7901** | +13.02% |
+| **EM@5** | 0.2500 | **0.4402** | +19.02% |
+| **EM@10** | 0.3322 | **0.5706** | +23.84% |
+| **EM@20** | 0.3990 | **0.6688** | +26.89% |
+| **nDCG@5** | 0.5579 | **0.6091** | +5.831% |
+| **nDCG@10** | 0.5822 | **0.6432** | +6.1% |
+| **nDCG@20** | 0.5970 | **0.6628** | +6.58% |
+| **MAP** | 0.4904 | **0.5613** | +7.09% |
 
-> **Exact Match (EM)** is the critical metric for multi-hop QA — it requires finding **both** gold documents in the top-K. Our system achieves a **+76% improvement** in EM@5, demonstrating that the GNN successfully propagates query relevance through graph edges to surface the 2nd-hop document that vector search alone cannot find.
+> **Exact Match (EM)** is the critical metric for multi-hop QA — it requires finding **both** gold documents in the top-K. The system achieves a **+19.02% improvement** in EM@5, demonstrating that the GNN successfully propagates query relevance through graph edges to surface the 2nd-hop document that vector search alone cannot find.
 
 ### Metric Definitions
 - **Recall@K**: Fraction of gold documents found in the top-K (0.0 / 0.5 / 1.0 for 2-gold-doc queries)
@@ -287,7 +286,7 @@ The knowledge graph connects 246K documents through two edge types:
 | Optimizer | AdamW |
 | Learning Rate | 1e-3 |
 | Weight Decay | 1e-4 |
-| Batch Size | 2 (due to large subgraphs) |
+| Batch Size | 16 (due to large subgraphs) |
 | Epochs | 15 |
 | Warmup | 2 epochs |
 | LR Schedule | CosineAnnealingLR |
