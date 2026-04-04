@@ -28,7 +28,7 @@ Standard vector-based retrieval (RAG) finds documents that are **semantically si
 > - **Hop 1:** *"Margaret Sanger founded the first Planned Parenthood clinic in Brownsville, Brooklyn."* ← semantically close to query
 > - **Hop 2:** *"Margaret Sanger served as the first president of the International Planned Parenthood Federation."* ← semantically **distant** from query, but connected through entity `Margaret Sanger`
 
-**Vector RAG retrieves Hop 1 but misses Hop 2.** Our system solves this by building a document graph and using a GNN to propagate query relevance through graph edges, surfacing the critical 2nd-hop documents.
+**Vector RAG retrieves Hop 1 but misses Hop 2.** This system solves this by building a document graph and using a GNN to propagate query relevance through graph edges, surfacing the critical 2nd-hop documents.
 
 ---
 
