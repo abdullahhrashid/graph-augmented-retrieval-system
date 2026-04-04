@@ -9,6 +9,8 @@
 [![PyG](https://img.shields.io/badge/PyG-2.5+-3C2179?style=for-the-badge&logo=pyg&logoColor=white)](https://pyg.org)
 [![Ray Serve](https://img.shields.io/badge/Ray_Serve-2.9+-028CF0?style=for-the-badge&logo=ray&logoColor=white)](https://ray.io)
 [![FAISS](https://img.shields.io/badge/FAISS-Meta-0467DF?style=for-the-badge&logo=meta&logoColor=white)](https://github.com/facebookresearch/faiss)
+[![spaCy](https://img.shields.io/badge/spaCy-09A3D5?style=for-the-badge&logo=spacy&logoColor=white)](https://spacy.io)
+[![WandB](https://img.shields.io/badge/Weights_&_Biases-FFBE00?style=for-the-badge&logo=WeightsAndBiases&logoColor=white)](https://wandb.ai)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/abdullahrashid/graph-retriever)
 [![HuggingFace](https://img.shields.io/badge/🤗_Sentence_Transformers-FFD21E?style=for-the-badge)](https://huggingface.co/sentence-transformers)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
