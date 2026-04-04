@@ -1,0 +1,24 @@
+serving:
+  host: 0.0.0.0
+  port: 8000
+  checkpoint: checkpoints/v1-rgatv2conv/best_model.pt
+  top_k: 10
+
+paths:
+  embeddings: data/embeddings
+  graph: data/graph
+  processed: data/processed
+
+embeddings:
+  model_name: all-MiniLM-L6-v2
+  embedding_dim: 384
+
+retrieval:
+  seed_k: 20
+  expansion_hops: 2
+  max_neighbors_per_hop: 40
+
+gnn:
+  hidden_dim: 256
+  dropout: 0.2
+  heads: 2

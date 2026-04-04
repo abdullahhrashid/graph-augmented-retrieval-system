@@ -1,9 +1,10 @@
+from transformers.models.gpt_neox_japanese.modeling_gpt_neox_japanese import bias_dropout_add
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-#siglip loss with class-imbalance correction
+#modified siglip loss (for graphs and text instead of images and text) with class imbalance correction
 class MultiPositiveSigmoidLoss(nn.Module):
     def __init__(self, init_t=math.log(10.0), init_b=0.0):
         super().__init__()
@@ -26,4 +27,3 @@ class MultiPositiveSigmoidLoss(nn.Module):
         )
 
         return loss
-

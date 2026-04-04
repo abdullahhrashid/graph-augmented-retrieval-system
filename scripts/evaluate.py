@@ -95,30 +95,7 @@ def expand_subgraph(seeds, adj, expansion_hops, max_neighbors):
     return subgraph_nodes
 
 
-def run_graph_rag(data, config, k_values):
-    logger.info('Running Graph RAG')
-    all_ranked = []
-    max_k = max(k_values)
-    expansion_hops = config['retrieval']['expansion_hops']
-    max_neighbors = config['retrieval'].get('max_neighbors_per_hop', 40)
 
-    for i in tqdm(range(len(data['seed_indices'])), desc='Graph RAG'):
-        seeds = set(data['seed_indices'][i].tolist())
-        subgraph_nodes = expand_subgraph(seeds, data['adj'], expansion_hops, max_neighbors)
-
-        #score all nodes by cosine similarity with query
-        node_list = sorted(subgraph_nodes)
-        node_embs = np.array(data['doc_embs'][node_list])  
-        query = data['query_embs'][i]  # [D]
-
-        scores = node_embs @ query  # cosine sim (embeddings are normalized)
-
-        #rank by score descending
-        top_local = np.argsort(-scores)[:max_k]
-        ranked_ids = [data['chunk_ids'][node_list[j]] for j in top_local]
-        all_ranked.append(ranked_ids)
-
-    return all_ranked
 
 def run_gnn_rag(data, config, checkpoint_path, k_values):
     logger.info('Running GNN RAG')
@@ -236,10 +213,6 @@ def main():
     #vector rag
     vec_ranked = run_vector_rag(data, k_values)
     results['Vector RAG'] = evaluate_system(vec_ranked, data['all_gold_ids'], k_values)
-
-    #graph rag
-    graph_ranked = run_graph_rag(data, config, k_values)
-    results['Graph RAG'] = evaluate_system(graph_ranked, data['all_gold_ids'], k_values)
 
     #graph rag with gnn
     gnn_ranked = run_gnn_rag(data, config, args.checkpoint, k_values)
