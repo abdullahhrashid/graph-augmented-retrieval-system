@@ -305,9 +305,9 @@ The knowledge graph connects 246K documents through two edge types:
 
 ## Training & Evaluation
 
-### Train on Kaggle
+### Train
 
-Upload the `notebooks/train_gnn.py` notebook to Kaggle with a T4 GPU accelerator and the preprocessed dataset.
+First, you must prepare the data by running the corresponding scripts. Then, run the `train.py` script by passing in your WandB run name and the config file.
 
 ### Evaluate
 
