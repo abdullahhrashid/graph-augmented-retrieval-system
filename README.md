@@ -90,12 +90,12 @@ Input:  x ∈ ℝ^(N×384)     (node embeddings)
 
 1. Query-Conditioned Gating
    q_node = broadcast(q, batch)           # [N, 384]
-   gate = σ(MLP([x ∥ q_node]))           # [N, 384]
+   gate = σ(MLP([x ∥ q_node]))             # [N, 384]
    x₀ = x ⊙ gate                          # suppress irrelevant features
 
 2. Feature Construction
    interaction = x₀ ⊙ q_node              # element-wise relevance
-   h = [x₀ ∥ q_node ∥ interaction]       # [N, 1152]
+   h = [x₀ ∥ q_node ∥ interaction]         # [N, 1152]
 
 3. Graph Message Passing
    h = ReLU(GATv2Conv₁(h, edges))         # [N, 512]  (256 × 2 heads)
@@ -103,9 +103,9 @@ Input:  x ∈ ℝ^(N×384)     (node embeddings)
 
 4. Projection + Residual
    out = Linear(h) + x₀                   # [N, 384]
-   out = L2Normalize(out)                  # unit sphere
+   out = L2Normalize(out)                 # unit sphere
 
-Score: score(doc_i) = out_i · q            # cosine similarity
+Score: score(doc_i) = out_i · q           # cosine similarity
 ```
 
 ### Key Design Decisions
